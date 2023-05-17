@@ -92,7 +92,7 @@ def send_json_report(json_report: dict, test=False):
     headers = {'User-Agent': tns_marker}
     json_data = {'api_key': TNS_API_KEY, 'data': json_report}
 
-    print(f"Sending report {json_report} to {json_url}")
+    print(f"Sending report {json_data} to {json_url}")
     response = requests.post(json_url, headers=headers, data=json_data)
     return response
 
@@ -227,8 +227,8 @@ def make_json_report(internal_names: list, ras: list, decs: list,
 
 
 def check_if_we_reported_to_tns(source_name,
-                                tns_logfilename='data/tns_reported_log.csv'):
-    if not os.path.exists(tns_logfilename):
-        return False
-    tns_log = pd.read_csv(tns_logfilename)
-    return source_name in tns_log['ZTF_names'].values
+                                report_logfile):
+    tns_log = pd.read_csv(report_logfile)
+    already_reported = source_name in tns_log['ZTF_names'].values
+
+    return already_reported

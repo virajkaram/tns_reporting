@@ -6,9 +6,10 @@ from datetime import datetime
 from astropy.time import Time
 import numpy as np
 import logging
-from tns_utils import check_exists_on_tns,check_if_we_reported_to_tns
+from tns_utils import check_exists_on_tns, check_if_we_reported_to_tns
 import sys
 from astropy.table import Table
+import os
 from tns_utils import make_json_report, send_json_report
 
 if __name__ == '__main__':
@@ -28,6 +29,13 @@ if __name__ == '__main__':
     query_logfile = args.query_logfile
     end_time = args.end_time
     start_time = args.start_time
+
+    reported_logfile = 'reported_sources_tns.txt'
+    if args.test:
+        reported_logfile = 'reported_sources_sandbox.txt'
+    if not os.path.exists(reported_logfile):
+        with open(reported_logfile, 'w') as f:
+            f.write('ZTF_names\n')
 
     logger = logging.getLogger()
     handler = logging.StreamHandler(sys.stdout)
@@ -102,14 +110,16 @@ if __name__ == '__main__':
     for source_name, source_ra, source_dec in zip(source_names, source_ras,
                                                   source_decs):
         logger.info(f"Querying {source_name}")
-        ztf_source_exists_on_tns, tns_name \
-            = check_exists_on_tns(source_ra, source_dec, source_name,
-                                  test=args.test)
+        # ztf_source_exists_on_tns, tns_name \
+        #     = check_exists_on_tns(source_ra, source_dec, source_name,
+        #                           test=args.test)
+        ztf_source_exists_on_tns = check_if_we_reported_to_tns(source_name,
+                                                               reported_logfile)
         sources_exist_on_tns.append(ztf_source_exists_on_tns)
+
         if ztf_source_exists_on_tns:
             nsrcs_already_on_tns += 1
-            logger.info(f"Source {source_name} exists on TNS, "
-                        f"as {tns_name}.")
+            logger.info(f"Source {source_name} exists on TNS.")
         # Timeout to prevent too many requests
         time.sleep(args.timeout_seconds)
 
@@ -132,6 +142,9 @@ if __name__ == '__main__':
                 logger.info(f"Report for {source_name} sent successfully with"
                             f"response {response.text}.")
                 nsrcs_reported = len(source_names_to_report)
+
+            with open(f"{reported_logfile}", 'a') as f:
+                f.write(f"{source_name}\n")
 
     if query_logfile:
         new_row = Table()
